@@ -1,0 +1,18 @@
+# --- Крок 1: Ingestion ---
+newspaper4k
+trafilatura
+keybert
+sentence-transformers
+
+# --- Крок 2: Пошук кандидатів (буде додано на наступному кроці) ---
+# gdeltdoc
+# searx-instance-client (або власний http-клієнт до self-hosted SearXNG)
+# ddgs
+
+# --- Крок 3+: буде додано по мірі розробки ---
+# spacy
+# nli-transformers / transformers
+# ollama (python-клієнт для локальної Ollama)
+
+# --- Тести ---
+pytest
