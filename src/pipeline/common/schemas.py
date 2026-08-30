@@ -2,7 +2,23 @@
 from dataclasses import dataclass, asdict, field
 from typing import List, Optional
 import json
+from pydantic import BaseModel, HttpUrl
+from typing import Optional, List
+from datetime import datetime
 
+
+class ArticleCandidate(BaseModel):
+    url: HttpUrl
+    title: Optional[str] = None
+    publish_date: Optional[datetime] = None
+    source_domain: Optional[str] = None
+    text_hash: Optional[str] = None
+
+
+class SearchQuery(BaseModel):
+    keywords: List[str]
+    time_window_start: datetime
+    time_window_end: datetime
 
 @dataclass
 class ArticleData:
