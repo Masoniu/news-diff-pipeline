@@ -1,4 +1,15 @@
+"""
+Тести Кроку 1.
 
+test_parser_* — реальна логіка, працює офлайн (newspaper4k/trafilatura
+не потребують мережі, коли html вже переданий напряму).
+
+test_keywords_* — KeyBERT потребує завантаження моделі з HuggingFace
+Hub при першому запуску (мережевий доступ). Тут ми мокаємо сам виклик
+моделі, щоб перевірити, що "проводка" (wiring) модуля коректна:
+вхід -> вихід у потрібному форматі. Реальну якість екстракції треба
+перевіряти локально, після `pip install -r requirements.txt`.
+"""
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -27,7 +38,7 @@ def test_parser_extracts_text_and_title_offline():
 def test_parser_raises_without_url_or_html():
     try:
         parse_article()
-        assert False, "should be ValueError"
+        assert False, "мало бути ValueError"
     except ValueError:
         pass
 
@@ -35,21 +46,24 @@ def test_parser_raises_without_url_or_html():
 def test_parser_raises_on_empty_content():
     try:
         parse_article(url="https://example.com/empty", html="<html><body></body></html>")
-        assert False, "should be ValueError on empty html"
+        assert False, "should be ValueError on empty content"
     except ValueError:
         pass
 
 
 def test_keywords_wiring_with_mocked_model():
-    fake_pairs = [("залізнична аварія", 0.62), ("Львів", 0.55), ("Укрзалізниця", 0.41)]
+    fake_pairs = [("залізнична аварія", 0.62), ("рух потягів", 0.55), ("Укрзалізниця", 0.41)]
 
     with patch(
         "pipeline.stage1_ingestion.keywords._get_keybert_model"
-    ) as mock_get_model:
+    ) as mock_get_model, patch(
+        "pipeline.stage1_ingestion.keywords._get_keyphrase_vectorizer"
+    ) as mock_get_vectorizer:
         mock_model = mock_get_model.return_value
         mock_model.extract_keywords.return_value = fake_pairs
+        mock_get_vectorizer.return_value = object()
 
-        result = extract_keywords("anything for test", top_n=3)
+        result = extract_keywords("будь-який текст для тесту", top_n=3)
 
     assert len(result) == 3
     assert result[0].keyword == "залізнична аварія"
@@ -59,8 +73,8 @@ def test_keywords_wiring_with_mocked_model():
 def test_stage1_output_json_roundtrip():
     article = ArticleData(
         url="https://example.com/a",
-        title="Title",
-        text="Article text " * 20,
+        title="Заголовок",
+        text="Текст статті " * 20,
         publish_date="2026-08-25T10:30:00",
         source_domain="example.com",
         extraction_method="trafilatura",

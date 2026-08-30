@@ -32,27 +32,27 @@ def slugify(seed: str) -> str:
 
 
 def main():
-    p = argparse.ArgumentParser(description="Step 1: Ingestion (parse + keywords)")
-    p.add_argument("--url", help="article url (network)")
-    p.add_argument("--html-file", help="Local HTML-file")
+    p = argparse.ArgumentParser(description="Step 1: Ingestion")
+    p.add_argument("--url", help="URL")
+    p.add_argument("--html-file", help="HTML")
     p.add_argument("--top-n", type=int, default=10, help="How many keywords")
     args = p.parse_args()
 
     if not args.url and not args.html_file:
-        p.error("Needed --url or --html-file")
+        p.error("Need --url or --html-file")
 
     html = None
     if args.html_file:
         html = Path(args.html_file).read_text(encoding="utf-8")
 
-    logger.info("")
+    logger.info("Parsing article")
     article = parse_article(url=args.url, html=html)
     logger.info("Extraction method: %s", article.extraction_method)
     logger.info("Title: %s", article.title)
-    logger.info("Text size: %d символів", len(article.text))
-    logger.info("Date of publication: %s", article.publish_date)
+    logger.info("Text length: %d chars", len(article.text))
+    logger.info("Publish date: %s", article.publish_date)
 
-    logger.info("Keyword extraction")
+    logger.info("Extracting keywords")
     keywords = extract_keywords(article.text, top_n=args.top_n)
     logger.info("Keywords: %s", [k.keyword for k in keywords])
 

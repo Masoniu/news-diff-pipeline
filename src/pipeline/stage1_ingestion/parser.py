@@ -8,7 +8,7 @@ from ..common.schemas import ArticleData
 
 logger = logging.getLogger(__name__)
 
-MIN_TEXT_LEN = 200
+MIN_TEXT_LEN = 200  # символів; менше -> вважаємо, що екстрактор не впорався
 
 
 def _domain(url: str) -> Optional[str]:
@@ -21,7 +21,7 @@ def _parse_with_newspaper(url: Optional[str], html: Optional[str]) -> Optional[A
     try:
         from newspaper import Article
     except ImportError:
-        logger.warning("newspaper4k not installed")
+        logger.warning("newspaper4k not installed (pip install newspaper4k) - skipping")
         return None
 
     try:
@@ -33,7 +33,7 @@ def _parse_with_newspaper(url: Optional[str], html: Optional[str]) -> Optional[A
             article.download()
         article.parse()
     except Exception as e:
-        logger.warning("newspaper4k fallen with error: %s", e)
+        logger.warning("newspaper4k failed with error: %s", e)
         return None
 
     if not article.text or len(article.text) < MIN_TEXT_LEN:
@@ -53,7 +53,7 @@ def _parse_with_trafilatura(url: Optional[str], html: Optional[str]) -> Optional
     try:
         import trafilatura
     except ImportError:
-        logger.warning("trafilatura not installed")
+        logger.warning("trafilatura not installed (pip install trafilatura) - skipping")
         return None
 
     if html is None:
@@ -66,7 +66,7 @@ def _parse_with_trafilatura(url: Optional[str], html: Optional[str]) -> Optional
             html, output_format="json", with_metadata=True, url=url
         )
     except Exception as e:
-        logger.warning("trafilatura fallen with errror: %s", e)
+        logger.warning("trafilatura failed with error: %s", e)
         return None
 
     if not result:
@@ -89,17 +89,17 @@ def _parse_with_trafilatura(url: Optional[str], html: Optional[str]) -> Optional
 
 def parse_article(url: Optional[str] = None, html: Optional[str] = None) -> ArticleData:
     if url is None and html is None:
-        raise ValueError("url or html heeded")
+        raise ValueError("Either url or html must be provided")
 
     result = _parse_with_newspaper(url, html)
     if result is not None:
-        logger.info("Parsed using newspaper4k: %s", url or "[local html]")
+        logger.info("Parsed via newspaper4k: %s", url or "[local html]")
         return result
 
-    logger.info("newspaper4k failed, trying trafilatura")
+    logger.info("newspaper4k failed to extract, trying trafilatura")
     result = _parse_with_trafilatura(url, html)
     if result is not None:
-        logger.info("Parsed using trafilatura: %s", url or "[local html]")
+        logger.info("Parsed via trafilatura: %s", url or "[local html]")
         return result
 
-    raise ValueError(f"Extractors failed to parse article: {url or '[local html]'}")
+    raise ValueError(f"Neither extractor could parse the article: {url or '[local html]'}")

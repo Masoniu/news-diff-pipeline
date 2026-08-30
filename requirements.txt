@@ -4,15 +4,8 @@ trafilatura
 keybert
 sentence-transformers
 
-# --- Крок 2: Пошук кандидатів (буде додано на наступному кроці) ---
-# gdeltdoc
-# searx-instance-client (або власний http-клієнт до self-hosted SearXNG)
-# ddgs
+spacy==3.8.16
 
-# --- Крок 3+: буде додано по мірі розробки ---
-# spacy
-# nli-transformers / transformers
-# ollama (python-клієнт для локальної Ollama)
-
-# --- Тести ---
+nltk>=3.6.1
+psutil>=5.8.0
 pytest
