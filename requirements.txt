@@ -1,4 +1,4 @@
-# --- Крок 1: Ingestion ---
+
 newspaper4k
 trafilatura
 keybert
@@ -9,3 +9,5 @@ spacy==3.8.16
 nltk>=3.6.1
 psutil>=5.8.0
 pytest
+gdeltdoc
+pandas
