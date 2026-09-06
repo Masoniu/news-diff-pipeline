@@ -8,11 +8,10 @@ ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 FIXTURES = Path(__file__).parent / "fixtures"
 
-from pipeline.stage2_search.gdelt_client import (
+from pipeline.stage2_search.ddg_client import (
     build_query,
     compute_time_window,
-    _parse_response,
-    search_gdelt,
+    search_ddg as search_gdelt,
 )
 from pipeline.stage2_search.scraper import scrape_candidates
 from pipeline.common.schemas import ArticleData, CandidateArticle
@@ -20,14 +19,15 @@ from pipeline.common.schemas import ArticleData, CandidateArticle
 
 def test_build_query_quotes_multiword_phrases():
     query = build_query(["train traffic", "Lviv", "accident"], max_keywords=5)
-    assert '"train traffic"' in query
+    assert "train" in query
+    assert "traffic" in query
     assert "Lviv" in query
-    assert " OR " in query
-
+    assert '"' not in query
 
 def test_build_query_respects_max_keywords():
-    query = build_query(["a", "b", "c", "d", "e"], max_keywords=2)
-    assert query.count(" OR ") == 1
+    query = build_query(["alpha", "beta", "gamma", "delta", "epsilon"], max_keywords=2)
+    assert len(query.split()) == 2
+    assert query == "alpha beta"
 
 
 def test_build_query_raises_on_empty_list():
