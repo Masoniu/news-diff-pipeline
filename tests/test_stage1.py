@@ -40,7 +40,7 @@ def test_parser_raises_on_empty_content():
 
 
 def test_keywords_wiring_with_mocked_model():
-    fake_pairs = [("test phrase one", 0.62), ("test phrase two", 0.55), ("test phrase three", 0.41)]
+    fake_pairs = [("test one", 0.62), ("test two", 0.55), ("three", 0.41)]
 
     with patch(
         "pipeline.stage1_ingestion.keywords._get_keybert_model"
@@ -54,7 +54,7 @@ def test_keywords_wiring_with_mocked_model():
         result = extract_keywords("any text for testing", top_n=3)
 
     assert len(result) == 3
-    assert result[0].keyword == "test phrase one"
+    assert result[0].keyword == "test one"
     assert result[0].score == 0.62
 
 
