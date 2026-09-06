@@ -1,4 +1,3 @@
-
 import json
 import sys
 from pathlib import Path
@@ -24,73 +23,55 @@ def test_build_query_quotes_multiword_phrases():
     assert "Lviv" in query
     assert '"' not in query
 
+
 def test_build_query_respects_max_keywords():
     query = build_query(["alpha", "beta", "gamma", "delta", "epsilon"], max_keywords=2)
     assert len(query.split()) == 2
     assert query == "alpha beta"
 
 
-def test_build_query_raises_on_empty_list():
-    try:
-        build_query([])
-        assert False, "expected ValueError"
-    except ValueError:
-        pass
-
-
 def test_compute_time_window_with_valid_date():
     start, end = compute_time_window("2026-08-25T10:30:00+03:00", window_days=2)
-    assert start.startswith("202608")
-    assert end.startswith("202608")
-    assert start < end
+    assert start == "past week"
+    assert end == "now"
 
 
 def test_compute_time_window_falls_back_without_date():
     start, end = compute_time_window(None, window_days=2)
-    assert len(start) == 14  # YYYYMMDDHHMMSS
-    assert len(end) == 14
-
-
-def test_parse_response_from_fixture():
-    raw = (FIXTURES / "gdelt_response_sample.json").read_text(encoding="utf-8")
-    data = json.loads(raw)
-    candidates = _parse_response(data)
-
-    assert len(candidates) == 4
-    assert candidates[0].url == "https://news-source-a.ua/lviv-train-crash-report"
-    assert candidates[0].source == "gdelt"
-    assert candidates[3].language == "English"
+    assert start == "past week"
+    assert end == "now"
 
 
 def test_search_gdelt_with_mocked_network():
-    raw = (FIXTURES / "gdelt_response_sample.json").read_text(encoding="utf-8")
-    fixture_data = json.loads(raw)
+    fake_results = [
+        {"url": "https://news-source-a.ua/lviv-train-crash", "title": "Crash", "date": "2026-08-25",
+         "source": "News A"},
+        {"url": "https://news-source-b.ua/accident", "title": "Accident", "date": "2026-08-25", "source": "News B"},
+    ]
 
-    mock_response = MagicMock()
-    mock_response.json.return_value = fixture_data
-    mock_response.raise_for_status.return_value = None
+    with patch("pipeline.stage2_search.ddg_client.DDGS") as mock_ddgs_class:
+        mock_instance = mock_ddgs_class.return_value.__enter__.return_value
+        mock_instance.news.return_value = fake_results
 
-    with patch("pipeline.stage2_search.gdelt_client.requests.get", return_value=mock_response) as mock_get:
         candidates = search_gdelt(
             keywords=["train traffic", "Lviv"],
             publish_date="2026-08-25T10:30:00+03:00",
         )
 
-    assert len(candidates) == 4
-    assert mock_get.called
-    called_params = mock_get.call_args.kwargs["params"]
-    assert "train traffic" in called_params["query"] or '"train traffic"' in called_params["query"]
+    assert len(candidates) == 2
+    assert candidates[0].url == "https://news-source-a.ua/lviv-train-crash"
+    assert candidates[0].source == "duckduckgo"
 
 
 def test_scrape_candidates_one_failure_does_not_break_others():
     candidates = [
         CandidateArticle(
             url="https://ok-site.com/a", title="OK", seendate=None,
-            domain="ok-site.com", language="en", source_country="Ukraine", source="gdelt",
+            domain="ok-site.com", language="en", source_country="Ukraine", source="duckduckgo",
         ),
         CandidateArticle(
             url="https://broken-site.com/b", title="Broken", seendate=None,
-            domain="broken-site.com", language="en", source_country="Ukraine", source="gdelt",
+            domain="broken-site.com", language="en", source_country="Ukraine", source="duckduckgo",
         ),
     ]
 
@@ -111,8 +92,3 @@ def test_scrape_candidates_one_failure_does_not_break_others():
     assert len(ok) == 1
     assert len(failed) == 1
     assert "simulated scrape failure" in failed[0].scrape_error
-
-
-if __name__ == "__main__":
-    import pytest
-    sys.exit(pytest.main([__file__, "-v"]))
