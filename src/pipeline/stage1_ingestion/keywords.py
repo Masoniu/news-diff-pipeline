@@ -25,7 +25,7 @@ def _get_keybert_model(model_name: str = DEFAULT_SBERT_MODEL):
 def _get_keyphrase_vectorizer(spacy_pipeline: str = DEFAULT_SPACY_PIPELINE):
     if spacy_pipeline not in _vectorizer_cache:
         from keyphrase_vectorizers import KeyphraseCountVectorizer
-        logger.info("Initializing KeyphraseCountVectorizer with spaCy pipeline: %s", spacy_pipeline)
+        logger.info("Initializing KeyphraseCountVectorizer: %s", spacy_pipeline)
         _vectorizer_cache[spacy_pipeline] = KeyphraseCountVectorizer(
             spacy_pipeline=spacy_pipeline,
             pos_pattern=DEFAULT_POS_PATTERN,
@@ -51,12 +51,19 @@ def extract_keywords(
         pairs = kb.extract_keywords(
             text,
             vectorizer=vectorizer,
-            top_n=top_n,
+            top_n=top_n * 2,
             use_mmr=True,
             diversity=0.5,
         )
     except ValueError:
-        logger.warning("No keyphrase candidates found in text, returning empty list")
+        logger.warning("No keyphrase candidates found, returning empty list")
         return []
 
-    return [KeywordResult(keyword=k, score=round(float(s), 4)) for k, s in pairs]
+    dynamic_keywords = []
+    for kw, score in pairs:
+        if len(kw.split()) <= 2:
+            dynamic_keywords.append(KeywordResult(keyword=kw, score=round(float(score), 4)))
+        if len(dynamic_keywords) == top_n:
+            break
+
+    return dynamic_keywords
