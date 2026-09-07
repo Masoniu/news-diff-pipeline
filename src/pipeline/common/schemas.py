@@ -12,6 +12,7 @@ class ArticleData:
     publish_date: Optional[str]
     source_domain: Optional[str]
     extraction_method: str
+    language: Optional[str] = None
 
     def to_dict(self) -> dict:
         return asdict(self)
