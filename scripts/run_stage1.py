@@ -42,7 +42,7 @@ def main():
     logger.info("Title: %s", article.title)
 
     logger.info("Extracting keywords via KeyBERT")
-    keywords = extract_keywords(article.text, top_n=args.top_n)
+    keywords = extract_keywords(article.text, language=article.language, top_n=args.top_n)
     logger.info("Keywords: %s", [k.keyword for k in keywords])
 
     output = Stage1Output(article=article, keywords=keywords)
