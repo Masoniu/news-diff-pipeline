@@ -28,18 +28,21 @@ def compute_time_window(publish_date: Optional[str], window_days: int = 2) -> tu
 def search_ddg(
         keywords: List[str],
         publish_date: Optional[str],
+        language: str = "en",
         max_records: int = 15,
         window_days: int = 2,
         timeout: int = 30,
 ) -> List[CandidateArticle]:
     query = build_query(keywords)
-    logger.info("Querying DuckDuckGo News: query=%r", query)
+    regions = {"uk": "ua-uk", "en": "wt-wt", "ru": "ru-ru", "de": "de-de", "pl": "pl-pl"}
+    ddg_region = regions.get(language, "wt-wt")
+
+    logger.info("Querying DuckDuckGo News (Region: %s): query=%r", ddg_region, query)
 
     candidates = []
     try:
         with DDGS() as ddgs:
-            results = ddgs.news(query, timelimit="w", max_results=max_records)
-
+            results = ddgs.news(query, region=ddg_region, timelimit="w", max_results=max_records)
             if results:
                 for r in results:
                     candidates.append(
@@ -48,13 +51,12 @@ def search_ddg(
                             title=r.get("title", ""),
                             seendate=r.get("date", ""),
                             domain=r.get("source", ""),
-                            language="uk",
-                            source_country="UA",
+                            language=language,
+                            source_country=ddg_region.split("-")[0].upper() if "-" in ddg_region else "UN",
                             source="duckduckgo",
                         )
                     )
     except Exception as e:
         logger.error("DDG Search failed: %s", e)
 
-    logger.info("DuckDuckGo returned %d candidates", len(candidates))
     return candidates
