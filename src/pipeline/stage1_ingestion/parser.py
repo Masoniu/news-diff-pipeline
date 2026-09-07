@@ -3,6 +3,7 @@ import json as _json
 import logging
 from typing import Optional
 from urllib.parse import urlparse
+from langdetect import detect, LangDetectException
 
 from ..common.schemas import ArticleData
 
@@ -92,14 +93,15 @@ def parse_article(url: Optional[str] = None, html: Optional[str] = None) -> Arti
         raise ValueError("Either url or html must be provided")
 
     result = _parse_with_trafilatura(url, html)
-    if result is not None:
-        logger.info("Parsed via trafilatura: %s", url or "[local html]")
-        return result
+    if result is None:
+        logger.info("trafilatura failed to extract, trying newspaper4k")
+        result = _parse_with_newspaper(url, html)
 
-    logger.info("trafilatura failed to extract, trying newspaper4k")
-    result = _parse_with_newspaper(url, html)
-    if result is not None:
-        logger.info("Parsed via newspaper4k: %s", url or "[local html]")
-        return result
+    if result is None:
+        raise ValueError(f"Neither extractor could parse the article: {url or '[local html]'}")
+    try:
+        result.language = detect(result.text)
+    except LangDetectException:
+        result.language = "en"
 
-    raise ValueError(f"Neither extractor could parse the article: {url or '[local html]'}")
+    return result
