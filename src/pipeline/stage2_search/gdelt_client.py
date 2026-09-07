@@ -116,7 +116,7 @@ def search_gdelt(
     except ValueError as e:
         raise ValueError(
             f"GDELT returned non-JSON response. First 200 chars: {response.text[:200]!r}"
-        ) from e
+        )
 
     candidates = _parse_response(data)
     logger.info("GDELT returned %d candidates", len(candidates))

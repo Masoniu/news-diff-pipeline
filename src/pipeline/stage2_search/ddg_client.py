@@ -17,7 +17,6 @@ def build_query(keywords: List[str], max_keywords: int = 3) -> str:
 
     unique_words = list(dict.fromkeys(all_words))
 
-    # Беремо лише топ-3 слова для безпечного запиту
     safe_query = " ".join(unique_words[:max_keywords])
     return safe_query
 
