@@ -21,7 +21,7 @@ sys.path.insert(0, str(ROOT / "src"))
 # )
 
 from pipeline.stage2_search.ddg_client import (
-    search_ddg as search_gdelt,
+    search_ddg,
     build_query,
     compute_time_window,
 )
@@ -60,9 +60,10 @@ def main():
     logger.info("Time window: %s .. %s", start, end)
 
     logger.info("Searching")
-    candidates = search_gdelt(
+    candidates = search_ddg(
         keywords=keywords,
         publish_date=stage1.article.publish_date,
+        language=stage1.article.language or "en",
         max_records=args.max_records,
         window_days=args.window_days,
     )
@@ -72,12 +73,11 @@ def main():
 
     if not candidates:
         logger.warning(
-            "No candidates found. Possible reasons: base article older than "
-            "GDELT's ~3-month window, query too narrow, or no other "
-            "GDELT-indexed source covered this event."
+            "No candidates found. Possible reasons: query too narrow, "
+            "or no other DDG-indexed source covered this event."
         )
 
-    logger.info("=== Scraping %d candidates ===", len(candidates))
+    logger.info("Scraping %d candidates", len(candidates))
     scraped = scrape_candidates(candidates)
 
     output = Stage2Output(
@@ -93,7 +93,7 @@ def main():
     out_path.write_text(output.to_json(), encoding="utf-8")
 
     ok_count = sum(1 for c in scraped if c.article is not None)
-    logger.info("=== Done ===")
+    logger.info("Done")
     logger.info("Saved: %s", out_path)
     logger.info("%d/%d candidates scraped successfully", ok_count, len(scraped))
     logger.info("Review this file before moving to Stage 3.")
