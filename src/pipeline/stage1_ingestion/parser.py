@@ -87,8 +87,28 @@ def _parse_with_trafilatura(url: Optional[str], html: Optional[str]) -> Optional
         extraction_method="trafilatura",
     )
 
+def _fetch_with_cloudscraper(url: str) -> str | None:
+    try:
+        import cloudscraper
+        logger.info("Attempting to fetch HTML via cloudscraper (WAF bypass)...")
+        scraper = cloudscraper.create_scraper(
+            browser={"browser": "chrome", "platform": "windows", "mobile": False}
+        )
+        response = scraper.get(url, timeout=15)
+        if response.status_code == 200:
+            return response.text
+        else:
+            logger.warning("cloudscraper returned status %s", response.status_code)
+            return None
+    except ImportError:
+        logger.error("cloudscraper is not installed. Run `pip install cloudscraper`")
+        return None
+    except Exception as e:
+        logger.error("cloudscraper fetch failed: %s", e)
+        return None
 
-def parse_article(url: Optional[str] = None, html: Optional[str] = None) -> ArticleData:
+
+def parse_article(url: str | None = None, html: str | None = None) -> ArticleData:
     if url is None and html is None:
         raise ValueError("Either url or html must be provided")
 
@@ -97,8 +117,19 @@ def parse_article(url: Optional[str] = None, html: Optional[str] = None) -> Arti
         logger.info("trafilatura failed to extract, trying newspaper4k")
         result = _parse_with_newspaper(url, html)
 
+    if result is None and html is None and url is not None:
+        logger.info("Standard extractors failed. Triggering cloudscraper fallback...")
+        fallback_html = _fetch_with_cloudscraper(url)
+
+        if fallback_html:
+            logger.info("HTML fetched successfully. Retrying extraction...")
+            result = _parse_with_trafilatura(url=url, html=fallback_html)
+            if result is None:
+                result = _parse_with_newspaper(url=url, html=fallback_html)
+
     if result is None:
         raise ValueError(f"Neither extractor could parse the article: {url or '[local html]'}")
+
     try:
         result.language = detect(result.text)
     except LangDetectException:
