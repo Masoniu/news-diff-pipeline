@@ -9,9 +9,9 @@ FIXTURES = Path(__file__).parent / "fixtures"
 
 from pipeline.stage2_search.ddg_client import (
     build_query,
-    compute_time_window,
     search_ddg as search_gdelt,
 )
+from pipeline.stage2_search.gdelt_client import compute_time_window
 from pipeline.stage2_search.scraper import scrape_candidates
 from pipeline.common.schemas import ArticleData, CandidateArticle
 
@@ -32,14 +32,15 @@ def test_build_query_respects_max_keywords():
 
 def test_compute_time_window_with_valid_date():
     start, end = compute_time_window("2026-08-25T10:30:00+03:00", window_days=2)
-    assert start == "past week"
-    assert end == "now"
+    assert start == "20260823073000"
+    assert end == "20260827073000"
 
 
 def test_compute_time_window_falls_back_without_date():
     start, end = compute_time_window(None, window_days=2)
-    assert start == "past week"
-    assert end == "now"
+    assert len(start) == 14 and start.isdigit()
+    assert len(end) == 14 and end.isdigit()
+    assert start < end
 
 
 def test_search_gdelt_with_mocked_network():
