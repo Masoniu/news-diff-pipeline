@@ -63,6 +63,7 @@ class ScrapedCandidate:
     candidate: CandidateArticle
     article: Optional[ArticleData]
     scrape_error: Optional[str]
+    relevance_score: Optional[float] = None
 
 
 @dataclass
@@ -85,6 +86,7 @@ class Stage2Output:
                         "candidate": asdict(c.candidate),
                         "article": asdict(c.article) if c.article else None,
                         "scrape_error": c.scrape_error,
+                        "relevance_score": c.relevance_score,
                     }
                     for c in self.candidates
                 ],
@@ -103,6 +105,7 @@ class Stage2Output:
                     candidate=CandidateArticle(**c["candidate"]),
                     article=ArticleData(**c["article"]) if c["article"] else None,
                     scrape_error=c["scrape_error"],
+                    relevance_score=c.get("relevance_score"),
                 )
             )
         return Stage2Output(

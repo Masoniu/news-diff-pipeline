@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from pipeline.stage2_search.gdelt_client import compute_time_window, search_gdelt
 from pipeline.stage2_search.ddg_client import search_ddg, build_query
 from pipeline.stage2_search.scraper import scrape_candidates
+from pipeline.stage2_search.relevance import score_relevance
 from pipeline.common.schemas import Stage1Output, Stage2Output
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -87,6 +88,9 @@ def main():
 
     logger.info("Scraping %d candidates", len(candidates))
     scraped = scrape_candidates(candidates)
+
+    logger.info("Scoring candidate relevance")
+    score_relevance(stage1.article.text, scraped)
 
     output = Stage2Output(
         base_article_url=stage1.article.url,
